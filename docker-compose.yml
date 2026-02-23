@@ -1,0 +1,56 @@
+services:
+  # ============================================================
+  # FastAPI Application
+  # ============================================================
+  app:
+    build:
+      context: .
+      target: development
+    container_name: dentist_saas_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app                          # hot reload in development
+      - ./storage:/app/storage
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+  # ============================================================
+  # PostgreSQL Database
+  # ============================================================
+  db:
+    image: postgres:15-alpine
+    container_name: dentist_saas_db
+    environment:
+      POSTGRES_USER: rajeev
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: dentist_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dentist -d dentist_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================================
+  # Redis — POST-MVP (uncomment when Celery is activated)
+  # ============================================================
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: dentist_saas_redis
+  #   ports:
+  #     - "6379:6379"
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:
