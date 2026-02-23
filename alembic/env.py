@@ -12,16 +12,8 @@ from app.core.config import settings
 from app.database.base import Base
 
 # Import ALL models here so Alembic can discover them for autogenerate.
-# Add each model as it is created in Phase 2.
-# from app.models.user import User
-# from app.models.clinic import Clinic
-# from app.models.clinic_member import ClinicMember
-# from app.models.user_permission import UserPermission
-# from app.models.patient import Patient
-# from app.models.appointment import Appointment
-# from app.models.consultation import Consultation
-# from app.models.medication import Medication
-# from app.models.follow_up import FollowUp
+import app.models  # noqa: F401 — triggers all model imports via models/__init__.py
+
 
 # Alembic Config object
 config = context.config

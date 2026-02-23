@@ -62,14 +62,16 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 # ============================================================
 app.include_router(router)
 
-# Phase 4+ routers registered here as each module is built:
-# from app.api.v1.auth import router as auth_router
+# Routers — registered as each phase is completed
+from app.api.v1.auth import router as auth_router
+app.include_router(auth_router, prefix="/api/v1")
+
+# Phase 5+ (uncomment as built):
 # from app.api.v1.clinic import router as clinic_router
 # from app.api.v1.appointments import router as appointments_router
 # from app.api.v1.patients import router as patients_router
 # from app.api.v1.consultations import router as consultations_router
 # from app.api.v1.analytics import router as analytics_router
-# app.include_router(auth_router, prefix="/api/v1")
 # app.include_router(clinic_router, prefix="/api/v1")
 # app.include_router(appointments_router, prefix="/api/v1")
 # app.include_router(patients_router, prefix="/api/v1")
