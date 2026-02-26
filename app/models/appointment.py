@@ -1,6 +1,6 @@
 # Standard library
 import uuid
-from datetime import date, time
+from datetime import date
 
 # Third-party
 from sqlalchemy import (
@@ -10,9 +10,9 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Text,
-    Time,
     Index,
 )
+
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -75,7 +75,7 @@ class Appointment(Base, TimestampMixin):
 
     # Scheduling
     scheduled_date: Mapped[date] = mapped_column(Date, nullable=False)
-    scheduled_time_slot: Mapped[time] = mapped_column(Time, nullable=False)
+    scheduled_time_slot: Mapped[str | None] = mapped_column(String(30), nullable=True)
 
     # Pre-consultation notes (set by assistant at booking)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
