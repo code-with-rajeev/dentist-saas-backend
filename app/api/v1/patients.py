@@ -136,3 +136,6 @@ async def get_patient_appointments(
         "data": [item.model_dump(mode="json") for item in result.items],
         "meta": result.to_meta(),
     })
+
+
+
