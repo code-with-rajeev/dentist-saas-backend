@@ -1,108 +1,20 @@
-# Dentist AI SaaS — Backend
+# Dentist SaaS Backend
 
-Production-ready backend for dental clinic management.  
-**Stack:** FastAPI · PostgreSQL · SQLAlchemy (async) · Alembic · JWT Auth
-
----
-
-## Prerequisites
-
-- Python 3.12+
-- PostgreSQL 15+
-- Docker & Docker Compose (optional, recommended for local DB)
+Production-ready backend API for a multi-tenancy Dental Clinic Management SaaS built with **FastAPI**, **SQLAlchemy**, **PostgreSQL**, and **asyncpg**.
 
 ---
 
-## Local Setup
+## Tech Stack
 
-### 1. Clone the repository
-
-```bash
-git clone <repo-url>
-cd dentist-saas-backend
-```
-
-### 2. Create virtual environment
-
-```bash
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements-dev.txt
-```
-
-### 4. Configure environment
-
-```bash
-cp .env.example .env
-# Edit .env with your local DB credentials
-```
-
-Minimum required in `.env`:
-```
-APP_SECRET_KEY=any-random-256-bit-string
-DATABASE_URL=postgresql+asyncpg://dentist:dentist123@localhost:5432/dentist_db
-JWT_SECRET_KEY=any-random-256-bit-string
-```
-
-### 5. Start PostgreSQL (via Docker — recommended)
-
-```bash
-docker-compose up -d db
-```
-
-Or use a local PostgreSQL instance — create the database manually:
-```sql
-CREATE DATABASE dentist_db;
-```
-
-### 6. Run database migrations
-
-```bash
-alembic upgrade head
-```
-
-### 7. Start the development server
-
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### 8. Verify
-
-- API: [http://localhost:8000/health](http://localhost:8000/health)
-- Swagger: [http://localhost:8000/docs](http://localhost:8000/docs)
-- ReDoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)
-
----
-
-## Running Tests
-
-```bash
-pytest tests/unit/            # Unit tests
-pytest tests/integration/     # Integration tests (requires running DB)
-pytest tests/rbac/            # RBAC isolation tests
-pytest --cov=app tests/       # With coverage report
-```
-
----
-
-## Docker (Full Stack)
-
-```bash
-# Start app + db
-docker-compose up
-
-# Run migrations inside container
-docker-compose exec app alembic upgrade head
-
-# Seed development data
-docker-compose exec app python scripts/seed_dev.py
-```
+| Layer | Technology |
+|---|---|
+| Framework | FastAPI (async) |
+| ORM | SQLAlchemy 2.x (async) |
+| Database | PostgreSQL via asyncpg |
+| Auth | JWT (access + refresh tokens) |
+| PDF | ReportLab |
+| Migrations | Alembic |
+| Testing | pytest-asyncio + httpx |
 
 ---
 
@@ -110,30 +22,197 @@ docker-compose exec app python scripts/seed_dev.py
 
 ```
 app/
-├── main.py             # FastAPI app entry point
-├── dependencies.py     # Shared FastAPI dependencies
-├── core/               # Config, security, middleware, exceptions
-├── database/           # SQLAlchemy engine, session, mixins
-├── models/             # ORM models (DB tables)
-├── schemas/            # Pydantic request/response schemas
-├── api/v1/             # Route definitions
-├── services/           # Business logic
-├── repositories/       # DB queries
-├── rbac/               # Role-based access control
-├── tasks/              # Celery tasks (POST-MVP, stubbed)
-├── integrations/       # Third-party integrations (stubbed)
-├── utils/              # Pure utility functions
-└── constants/          # Enums and string constants
+├── api/v1/          # Route handlers (auth, clinic, patients, appointments, ...)
+├── core/            # Config, exceptions, security, logging
+├── database/        # Session factory, Alembic env
+├── models/          # SQLAlchemy ORM models
+├── rbac/            # Permissions, dependencies, CurrentUser
+├── repositories/    # DB query layer
+├── schemas/         # Pydantic request/response models
+├── services/        # Business logic (state machine, PDF, analytics)
+└── utils/           # pagination, ID generation, datetime utils
+
+tests/
+├── conftest.py      # Fixtures (client, clean_db, owner_headers, ...)
+├── integration/     # End-to-end HTTP tests (104 tests)
+├── unit/            # Pure Python unit tests (31+ tests)
+└── rbac/            # Role enforcement + clinic isolation tests (10 tests)
+
+scripts/
+└── seed_dev.py      # Dev DB seeder — run against live server
+engineering/         # Architecture docs, API contract, RBAC spec
 ```
 
 ---
 
-## Environment Variables
+## Local Setup
 
-See [`.env.example`](.env.example) for all required and optional variables.
+### 1. Prerequisites
+- Python 3.12+
+- PostgreSQL 14+ running locally
+
+### 2. Install dependencies
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 3. Configure environment
+
+```bash
+cp .env.example .env
+# Edit .env — set DATABASE_URL, SECRET_KEY, etc.
+```
+
+### 4. Run migrations
+
+```bash
+alembic upgrade head
+```
+
+### 5. Start the dev server
+
+```bash
+uvicorn app.main:app --reload
+```
+
+API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
-## Development Build Phases
+## Running Tests
 
-See [`engineering/DEVELOPMENT_PHASES.md`](engineering/DEVELOPMENT_PHASES.md) for the full build plan.
+Tests use a separate `NullPool` engine and `TRUNCATE` each table before every test for clean isolation.
+
+> **Requires PostgreSQL to be running.**
+
+```bash
+# All tests (integration + unit + rbac)
+pytest tests/ -v
+
+# By suite
+pytest tests/integration/ -v          # 104 integration tests
+pytest tests/unit/ -v                 # 31+ pure-Python unit tests
+pytest tests/rbac/ -v                 # 10 RBAC isolation tests
+
+# Single module
+pytest tests/integration/test_appointments.py -v
+
+# With coverage
+pytest tests/ --cov=app --cov-report=term-missing
+```
+
+---
+
+## Seeding the Dev Database
+
+Run the seed script against a running server to create realistic sample data:
+
+```bash
+# Start the server first
+uvicorn app.main:app --reload
+
+# In another terminal
+python scripts/seed_dev.py
+```
+
+**What it creates:**
+- 1 clinic owner (`dentist@demo-clinic.com`)
+- 2 staff members (assistant + receptionist)
+- 20 patients with realistic Indian names
+- 20 appointments across all statuses (pending, waiting, completed, cancelled, no_show)
+- 5 submitted consultations with medications and PDF reports
+
+Credentials are printed to console after seeding.
+
+---
+
+## API Modules
+
+| Module | Prefix | Endpoints |
+|---|---|---|
+| Auth | `/api/v1/auth` | register, login, refresh, logout, /me |
+| Clinic | `/api/v1/clinic` | settings CRUD, staff management |
+| Patients | `/api/v1/patients` | CRUD + search + appointments sub-route |
+| Appointments | `/api/v1/appointments` | lifecycle + queue + state transitions |
+| Consultations | `/api/v1/consultations` | draft → submit → PDF download |
+| Analytics | `/api/v1/analytics` | overview, appointments, revenue, patients |
+
+---
+
+## Authentication
+
+All routes (except `/auth/register` and `/auth/login`) require a valid JWT:
+
+```
+Authorization: Bearer <access_token>
+```
+
+Access tokens expire in 60 minutes. Use `POST /api/v1/auth/refresh` with the refresh token to get a new one.
+
+---
+
+## RBAC
+
+Users have roles (`clinic_owner`, `assistant`, `receptionist`) and granular permissions:
+
+```
+appointment:read    appointment:write   appointment:cancel  appointment:complete
+patient:read        patient:write
+consultation:write  consultation:submit
+analytics:read
+clinic:settings:read   clinic:settings:write   clinic:staff:manage
+```
+
+**Owner-only permissions** (cannot be granted to staff):
+`consultation:write`, `consultation:submit`, `analytics:read`,
+`clinic:settings:write`, `clinic:staff:manage`, `appointment:complete`
+
+---
+
+## Appointment State Machine
+
+```
+pending ──confirm──► waiting ──complete──► completed (terminal)
+   │                    │
+   └──cancel──►cancelled └──no-show──► no_show (terminal)
+   │                    │
+   └──reschedule──────── └──reschedule──► pending
+```
+
+---
+
+## PDF Reports
+
+Consultation reports are generated with ReportLab and saved to `PDF_STORAGE_PATH/{clinic_id}/{appointment_code}.pdf`.
+
+```bash
+# Set in .env
+PDF_STORAGE_PATH=./storage/reports
+```
+
+---
+
+## Alembic Migrations
+
+```bash
+# Create new migration
+alembic revision --autogenerate -m "description"
+
+# Apply
+alembic upgrade head
+
+# Rollback one
+alembic downgrade -1
+```
+
+---
+
+## Engineering Docs
+
+- [`engineering/DEVELOPMENT_PHASES.md`](engineering/DEVELOPMENT_PHASES.md) — Phase-by-phase implementation plan
+- [`engineering/API_CONTRACT.md`](engineering/API_CONTRACT.md) — Full API spec
+- [`engineering/RBAC.md`](engineering/RBAC.md) — RBAC design
+- [`engineering/MVP_TECH_DOC.md`](engineering/MVP_TECH_DOC.md) — Technical decisions
