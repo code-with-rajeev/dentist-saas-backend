@@ -108,11 +108,14 @@ async def logout(response: Response) -> JSONResponse:
     Client should also discard the access token.
     """
     response.delete_cookie(key="refresh_token", path="/api/v1/auth/refresh")
-    return JSONResponse(content={
-        "success": True,
-        "message": "Logged out successfully",
-        "data": None,
-    })
+    return JSONResponse(
+        content={
+            "success": True,
+            "message": "Logged out successfully",
+            "data": None,
+        },
+        headers=dict(response.headers),
+    )
 
 
 @router.get("/me", response_model=SuccessResponse[MeResponse])
