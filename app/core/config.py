@@ -81,13 +81,23 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         """
         Returns list of allowed CORS origins.
-        In development, returns ["*"] for open access.
-        In staging/production, returns the configured origins.
+
+        NOTE: Browsers block credentialed requests (Authorization header / cookies)
+        when allow_origins=["*"] — explicit origins are required.
+        Dev defaults cover the common React/Vite local ports.
+        Override via ALLOWED_ORIGINS in .env for any other port.
         """
-        if self.is_development:
-            return ["*"]
         if self.ALLOWED_ORIGINS:
             return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
+        if self.is_development:
+            # Explicit list — wildcard breaks credentialed browser requests
+            return [
+                "http://localhost:3000",   # Create React App
+                "http://localhost:5173",   # Vite
+                "http://localhost:4173",   # Vite preview
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
+            ]
         return []
 
 
