@@ -76,14 +76,29 @@ class AppointmentService:
         if patient is None:
             raise NotFoundException(code=PATIENT_NOT_FOUND, message="Patient not found in this clinic")
 
-        # Validate follow-up parent exists
-        if data.appointment_type == "follow_up" and data.parent_appointment_id:
+        # Enforce: follow_up requires a parent, everything else ignores it
+        parent_appointment_id = None
+        if data.appointment_type == "follow_up":
+            if not data.parent_appointment_id:
+                raise ValidationException(
+                    code="MISSING_REQUIRED_FIELD",
+                    message="parent_appointment_id is required for follow-up appointments",
+                )
             parent = await self.repo.get_by_id(data.parent_appointment_id, clinic_id)
             if parent is None:
                 raise NotFoundException(
-                    code=APPOINTMENT_NOT_FOUND,
+                    code="PARENT_APPOINTMENT_NOT_FOUND",
                     message="Parent appointment not found",
                 )
+            
+            # Business rule: cannot create follow-up for a completed appointment, as it doesn't make sense to follow up on something that's already done. Follow-ups should be created for pending/waiting appointments that need further action.
+            if parent.status == "completed":
+                raise ValidationException(
+                    code="INVALID_FOLLOW_UP_PARENT",
+                    message="Cannot create follow-up for a completed appointment",
+                )
+            
+            parent_appointment_id = data.parent_appointment_id
 
         code = await generate_appointment_code(clinic_id, self.db)
         appt = await self.repo.create(
