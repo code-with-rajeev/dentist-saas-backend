@@ -96,7 +96,8 @@ class QueueItem(BaseModel):
     queue_position: int | None
     scheduled_time_slot: str | None
     patient_id: uuid.UUID
-
+    patient_name: str | None = None        # ← add
+    appointment_type: str | None = None    # ← add
     model_config = {"from_attributes": True}
 
 

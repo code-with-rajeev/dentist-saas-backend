@@ -245,10 +245,17 @@ class AppointmentService:
     async def get_queue(self, clinic_id: uuid.UUID) -> QueueResponse:
         today = datetime.now(timezone.utc).date()
         items = await self.repo.get_queue(clinic_id, today)
+        queue_items = []
+        for a in items:
+            item = QueueItem.model_validate(a)
+            item.patient_name = a.patient.full_name if a.patient else None   # ← add
+            item.appointment_type = a.appointment_type                        # ← add
+            queue_items.append(item)
+
         return QueueResponse(
             date=today,
             total_waiting=len(items),
-            items=[QueueItem.model_validate(a) for a in items],
+            items=queue_items,
         )
 
     async def get_patient_appointments(

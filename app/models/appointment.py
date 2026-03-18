@@ -111,6 +111,7 @@ class Appointment(Base, TimestampMixin):
         "Patient",
         foreign_keys=[patient_id],
         back_populates="appointments",
+        lazy="selectin",    # ← add this
     )
     consultation: Mapped["Consultation | None"] = relationship(
         "Consultation",
