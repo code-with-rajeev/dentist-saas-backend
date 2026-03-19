@@ -3,7 +3,7 @@ import uuid
 from datetime import date
 
 # Third-party
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Body
 from fastapi.responses import JSONResponse
 
 # Internal — dependencies
@@ -139,9 +139,9 @@ async def confirm_appointment(
 )
 async def cancel_appointment(
     appointment_id: uuid.UUID,
-    body: AppointmentCancelRequest,
     current_user: AuthenticatedUser,
     db: DbSession,
+    body: AppointmentCancelRequest = Body(default_factory=AppointmentCancelRequest),
 ) -> JSONResponse:
     """Transition: pending|waiting → cancelled."""
     service = AppointmentService(db)
