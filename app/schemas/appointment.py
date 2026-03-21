@@ -69,6 +69,7 @@ class AppointmentResponse(BaseModel):
     cancelled_at: datetime | None
     confirmed_at: datetime | None
     patient_id: uuid.UUID
+    consultation_id: uuid.UUID | None = None  # Phase 7 addition
     parent_appointment_id: uuid.UUID | None
     created_at: datetime
 
@@ -85,6 +86,7 @@ class AppointmentListItem(BaseModel):
     scheduled_date: date
     scheduled_time_slot: str | None
     patient_id: uuid.UUID
+    consultation_id: uuid.UUID | None = None  # Phase 7 addition
     created_at: datetime
 
     model_config = {"from_attributes": True}

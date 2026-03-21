@@ -274,7 +274,14 @@ class AppointmentService:
         result = await self.repo.get_appointments_by_patient(
             patient_id, clinic_id, page=page, per_page=per_page
         )
-        result.items = [AppointmentListItem.model_validate(a) for a in result.items]
+        # add consultation_id to each item for convenience (Phase 7 addition)
+        items = []
+        for a in result.items:
+            item = AppointmentListItem.model_validate(a)
+            item.consultation_id = a.consultation.id if a.consultation else None
+            items.append(item)
+
+        result.items = items
         return result
 
 
@@ -283,4 +290,6 @@ class AppointmentService:
 # ============================================================
 
 def _to_response(appt) -> AppointmentResponse:
-    return AppointmentResponse.model_validate(appt)
+    response = AppointmentResponse.model_validate(appt)
+    response.consultation_id = appt.consultation.id if appt.consultation else None
+    return response

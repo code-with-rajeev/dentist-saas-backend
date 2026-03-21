@@ -137,5 +137,29 @@ async def get_patient_appointments(
         "meta": result.to_meta(),
     })
 
-
+# Get all consultations for a patient scoped to clinic, paginated
+@router.get(
+    "/{patient_id}/consultations",
+    response_model=PaginatedResponse,
+    dependencies=[Depends(require_permission(PATIENT_READ))],
+)
+async def get_patient_consultations(
+    patient_id: uuid.UUID,
+    current_user: AuthenticatedUser,
+    db: DbSession,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+) -> JSONResponse:
+    """List all consultations for a specific patient (paginated)."""
+    from app.services.consultation_service import ConsultationService
+    service = ConsultationService(db)
+    result = await service.get_patient_consultations(
+        patient_id, current_user.clinic_id, page=page, per_page=per_page
+    )
+    return JSONResponse(content={
+        "success": True,
+        "message": "Patient consultations retrieved",
+        "data": [item.model_dump(mode="json") for item in result.items],
+        "meta": result.to_meta(),
+    })
 
