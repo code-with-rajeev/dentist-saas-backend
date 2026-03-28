@@ -35,7 +35,15 @@ class Medication(Base):
         ForeignKey("clinics.id", ondelete="RESTRICT"),
         nullable=False,
     )
-
+    # Optional link back to the master med it was created from.
+    # NULL = dentist typed a free-form med not in library.
+    # SET NULL on delete = if master med deleted, Rx record is preserved.
+    med_library_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("med_library.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+    )
     # Prescription details — all free text (dentist enters what they prescribe)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     dosage: Mapped[str | None] = mapped_column(String(100), nullable=True)    # e.g. "500mg"

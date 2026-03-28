@@ -29,6 +29,7 @@ from app.repositories.patient_repository import PatientRepository
 
 # Internal — services
 from app.services.pdf_service import PDFService
+from app.services.med_library_service import MedLibraryService
 
 # Internal — schemas
 from app.schemas.consultation import (
@@ -153,7 +154,13 @@ class ConsultationService:
         appt = await self.appt_repo.get_by_id(consultation.appointment_id, clinic_id)
         if appt is not None and appt.status == "waiting":
             await self.appt_repo.update(appt, status="completed")
-
+        
+        # Increment usage_count for every med sourced from MedLibrary
+        med_service = MedLibraryService(self.db)
+        for med in consultation.medications or []:
+            if med.med_library_id is not None:
+                await med_service.increment_usage(med.med_library_id)
+                
         consultation = await self.repo.reload_with_medications(consultation)
         return _to_response(consultation)
 

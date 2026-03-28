@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 # ============================================================
 
 class MedicationCreate(BaseModel):
+    med_library_id: uuid.UUID | None = None                  # optional link to master med library (NULL if dentist typed free-form med)
     name: str = Field(..., min_length=1, max_length=200)
     dosage: str | None = Field(None, max_length=100)         # e.g. "500mg"
     frequency: str | None = Field(None, max_length=100)      # e.g. "3 times a day"
@@ -22,6 +23,7 @@ class MedicationCreate(BaseModel):
 
 class MedicationResponse(BaseModel):
     id: uuid.UUID
+    med_library_id: uuid.UUID | None
     name: str
     dosage: str | None
     frequency: str | None
@@ -89,6 +91,7 @@ class ConsultationListItem(BaseModel):
     id: uuid.UUID
     appointment_id: uuid.UUID
     fee_charged: Decimal | None
+    diagnosis: str | None = None
     is_submitted: bool
     report_generated: bool
     is_follow_up_required: bool

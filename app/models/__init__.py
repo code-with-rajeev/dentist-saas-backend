@@ -12,6 +12,7 @@ from app.models.patient import Patient
 from app.models.appointment import Appointment
 from app.models.consultation import Consultation
 from app.models.medication import Medication
+from app.models.med_library import MedLibrary
 from app.models.follow_up import FollowUp
 
 __all__ = [
@@ -23,5 +24,6 @@ __all__ = [
     "Appointment",
     "Consultation",
     "Medication",
+    "MedLibrary",
     "FollowUp",
 ]

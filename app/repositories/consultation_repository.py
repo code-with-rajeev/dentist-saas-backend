@@ -96,6 +96,7 @@ class ConsultationRepository:
             m = Medication(
                 consultation_id=consultation.id,
                 clinic_id=consultation.clinic_id,
+                med_library_id=med.get("med_library_id"),
                 name=med["name"],
                 dosage=med.get("dosage"),
                 frequency=med.get("frequency"),
