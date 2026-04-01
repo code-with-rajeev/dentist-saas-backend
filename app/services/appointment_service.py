@@ -109,11 +109,13 @@ class AppointmentService:
             scheduled_date=data.scheduled_date,
             scheduled_time_slot=data.scheduled_time_slot,
             notes=data.notes,
-            parent_appointment_id=data.parent_appointment_id,
+            parent_appointment_id=parent_appointment_id,
             status="pending",
             created_by=created_by.id,
         )
-        return _to_response(appt)
+        response = AppointmentResponse.model_validate(appt)
+        response.consultation_id = None  # consultation not created yet at this point, Buisness Rule
+        return response
 
     async def list_appointments(
         self,

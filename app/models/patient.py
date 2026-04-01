@@ -52,7 +52,7 @@ class Patient(Base, TimestampMixin, SoftDeleteMixin):
         "Appointment",
         back_populates="patient",
         cascade="all, delete-orphan",
-        lazy="dynamic",
+        lazy="selectin",
     )
 
     __table_args__ = (
