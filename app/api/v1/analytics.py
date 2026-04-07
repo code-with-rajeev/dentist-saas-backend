@@ -14,7 +14,7 @@ from app.rbac.permissions import ANALYTICS_READ
 from app.schemas.analytics import AnalyticsFilter
 from app.services.analytics_service import AnalyticsService
 
-router = APIRouter(prefix="/analytics", tags=["Analytics"])
+router = APIRouter(prefix="/analytics0", tags=["Analytics"])
 
 _OWNER_DEPS = [Depends(require_permission(ANALYTICS_READ)), Depends(require_owner())]
 
