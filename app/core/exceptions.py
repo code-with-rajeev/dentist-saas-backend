@@ -87,6 +87,16 @@ class ValidationException(AppException):
             detail=detail,
         )
 
+class RateLimitException(AppException):
+    """429 family — too many requests / rate limiting."""
+
+    def __init__(self, code: str, message: str, detail: Any = None) -> None:
+        super().__init__(
+            code=code,
+            message=message,
+            http_status=429,
+            detail=detail,
+        )
 
 class ServerException(AppException):
     """500 family — unhandled server errors."""

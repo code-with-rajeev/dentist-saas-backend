@@ -67,6 +67,16 @@ class Settings(BaseSettings):
     WHATSAPP_PHONE_NUMBER_ID: str | None = None
 
     # ------------------------------------------------------------------
+    # WhatsApp — POST-MVP (stubbed)
+    # ------------------------------------------------------------------
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+    EMAILS_FROM_NAME: str = "Dentist AI"
+    EMAILS_FROM_ADDRESS: str
+
+    # ------------------------------------------------------------------
     # Derived helpers
     # ------------------------------------------------------------------
     @property

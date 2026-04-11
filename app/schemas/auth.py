@@ -1,6 +1,7 @@
 # Standard library
 import uuid
 from datetime import datetime
+from app.constants.messages import OtpPurpose
 
 # Third-party
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -47,7 +48,7 @@ class ClinicResponse(BaseModel):
 
 class UserResponse(BaseModel):
     id: uuid.UUID
-    email: str
+    email: EmailStr
     full_name: str
     role: str
     clinic_id: uuid.UUID
@@ -73,7 +74,7 @@ class MeResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     full_name: str
-    email: str
+    email: EmailStr
     role: str
     clinic_id: uuid.UUID
     clinic_name: str
@@ -82,3 +83,16 @@ class MeResponse(BaseModel):
     last_login_at: datetime | None
 
     model_config = {"from_attributes": True}
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+    purpose: OtpPurpose
+
+class VerifyOtpRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(min_length=6, max_length=6)
+    purpose: OtpPurpose
+
+class ResetPasswordRequest(BaseModel):
+    reset_token: str
+    new_password: str = Field(min_length=8)

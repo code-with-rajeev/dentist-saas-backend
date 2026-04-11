@@ -6,11 +6,13 @@ from fastapi import APIRouter, Cookie, Response
 from fastapi.responses import JSONResponse
 
 # Internal — dependencies
+from app.constants.values import OTP_EXPIRE_MINUTES
 from app.dependencies import DbSession
 from app.rbac.dependencies import AuthenticatedUser
 
 # Internal — service
 from app.services.auth_service import AuthService
+from app.services.otp_service import OtpService
 
 # Internal — schemas
 from app.schemas.auth import (
@@ -19,12 +21,18 @@ from app.schemas.auth import (
     RegisterRequest,
     RegisterResponse,
     TokenResponse,
+    ForgotPasswordRequest,
+    VerifyOtpRequest,
+    ResetPasswordRequest
 )
 from app.schemas.common import SuccessResponse
 
 # Internal — exceptions
 from app.core.exceptions import AuthException
 from app.constants.messages import REFRESH_TOKEN_MISSING, REFRESH_TOKEN_INVALID
+
+# Constants
+from app.constants.messages import OtpPurpose
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 logger = logging.getLogger(__name__)
@@ -127,4 +135,61 @@ async def me(current_user: AuthenticatedUser, db: DbSession) -> JSONResponse:
         "success": True,
         "message": "Profile retrieved",
         "data": result.model_dump(mode="json"),
+    })
+
+@router.post("/forgot-password", response_model=SuccessResponse[None])
+async def forgot_password(body: ForgotPasswordRequest, db: DbSession) -> JSONResponse:
+    """
+    Initiate password reset flow by sending an OTP to the user's email.
+    Always returns success to prevent email enumeration.
+    """
+    if body.purpose != OtpPurpose.PASSWORD_RESET.value:
+        raise AuthException(
+            code=REFRESH_TOKEN_INVALID,
+            message="Invalid OTP purpose.",
+        )
+    service = OtpService(db)
+    await service.send_otp(body.email, OtpPurpose.PASSWORD_RESET)
+    return JSONResponse(content={
+        "success": True,
+        "message": f"If email exists, an OTP has been sent",
+        "data": None,
+    })
+
+@router.post("/verify-otp", response_model=SuccessResponse[str])
+async def verify_otp(body: VerifyOtpRequest, db: DbSession) -> JSONResponse:
+    """
+    Verify the OTP provided by the user. If valid, issue a short-lived reset token for password reset.
+    """
+    if body.purpose == OtpPurpose.PASSWORD_RESET.value:
+        service = OtpService(db)
+        reset_token = await service.verify_otp_and_issue_token(body.email, OtpPurpose.PASSWORD_RESET, otp_plain=body.otp)
+    elif body.purpose == OtpPurpose.REGISTER.value:
+        return JSONResponse(content={
+            "success": True,
+            "message": "Currently we are not onboarding users via online registration. Please contact support to create an account.",
+            "data": None,
+        })
+    else:
+        raise AuthException(
+            code=REFRESH_TOKEN_INVALID,
+            message="Invalid OTP purpose.",
+        )
+    return JSONResponse(content={
+        "success": True,
+        "message": "OTP verified. Use the reset token to set a new password.",
+        "data": reset_token,
+    })
+
+@router.post("/reset-password", response_model=SuccessResponse[None])
+async def reset_password(body: ResetPasswordRequest, db: DbSession) -> JSONResponse:
+    """
+    Reset the user's password using the reset token obtained from OTP verification.
+    """
+    service = OtpService(db)
+    await service.reset_password(body.reset_token, body.new_password)
+    return JSONResponse(content={
+        "success": True,
+        "message": "Password has been reset successfully.",
+        "data": None,
     })
