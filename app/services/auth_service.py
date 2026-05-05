@@ -219,6 +219,20 @@ class AuthService:
             is_active=member.is_active,
             last_login_at=user.last_login_at,
         )
+    # change password
+    async def change_password(self, current_user: CurrentUser, old_password: str, new_password: str) -> None:
+        """Change password for the current user."""
+        user = await self.user_repo.get_by_id(current_user.user_id)
+        if user is None or not verify_password(old_password, user.hashed_password):
+            raise AuthException(
+                code=INVALID_CREDENTIALS,
+                message="Invalid current password.",
+            )
+
+        await self.user_repo.update_password(
+            user_id=user.id,
+            new_hashed_password=hash_password(new_password),
+        )
 
 
 # ============================================================

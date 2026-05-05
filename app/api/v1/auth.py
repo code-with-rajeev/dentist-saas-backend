@@ -23,7 +23,8 @@ from app.schemas.auth import (
     TokenResponse,
     ForgotPasswordRequest,
     VerifyOtpRequest,
-    ResetPasswordRequest
+    ResetPasswordRequest,
+    ChangePasswordRequest,
 )
 from app.schemas.common import SuccessResponse
 
@@ -191,5 +192,19 @@ async def reset_password(body: ResetPasswordRequest, db: DbSession) -> JSONRespo
     return JSONResponse(content={
         "success": True,
         "message": "Password has been reset successfully.",
+        "data": None,
+    })
+
+# Change password endpoint for authenticated users. This is separate from the forgot/reset password flow and requires the old password for verification.
+@router.patch("/change-password", response_model=SuccessResponse[None])
+async def change_password(body: ChangePasswordRequest, current_user: AuthenticatedUser, db: DbSession) -> JSONResponse:
+    """
+    Change the user's password by verifying the old password. Only for authenticated users.
+    """
+    service = AuthService(db)
+    await service.change_password(current_user, body.old_password, body.new_password)
+    return JSONResponse(content={
+        "success": True,
+        "message": "Password has been changed successfully.",
         "data": None,
     })
