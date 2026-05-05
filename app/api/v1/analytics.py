@@ -11,7 +11,7 @@ from app.rbac.dependencies import AuthenticatedUser, require_owner, require_perm
 from app.rbac.permissions import ANALYTICS_READ
 
 # Internal — schemas + service
-from app.schemas.analytics2 import AnalyticsFilter
+from app.schemas.analytics import AnalyticsFilter
 from app.services.analytics_service import AnalyticsService
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])

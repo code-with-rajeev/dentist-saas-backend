@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.analytics_repository2 import AnalyticsRepository
 
 # Internal — schemas
-from app.schemas.analytics2 import (
+from app.schemas.analytics import (
     AnalyticsFilter,
     AnalyticsOverviewResponse,
     AppointmentAnalyticsResponse,
