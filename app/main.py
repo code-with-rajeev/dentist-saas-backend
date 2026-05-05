@@ -69,7 +69,6 @@ from app.api.v1.patients import router as patients_router
 from app.api.v1.appointments import router as appointments_router
 from app.api.v1.consultations import router as consultations_router
 from app.api.v1.analytics import router as analytics_router
-from app.api.v1.analytics2 import router as analytics2_router
 from app.api.v1.med_library import router as med_library_router
 from app.api.v1.overrides import router as overrides_router
 
@@ -80,7 +79,6 @@ app.include_router(appointments_router, prefix="/api/v1")
 app.include_router(consultations_router, prefix="/api/v1")
 app.include_router(med_library_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
-app.include_router(analytics2_router, prefix="/api/v1")
 app.include_router(overrides_router, prefix="/api/v1")
 
 

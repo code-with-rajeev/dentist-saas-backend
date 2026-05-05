@@ -126,7 +126,14 @@ class AppointmentService:
         per_page: int = 20,
     ) -> PaginatedResult:
         result = await self.repo.get_all_by_clinic(clinic_id, filters, page=page, per_page=per_page)
-        result.items = [AppointmentListItem.model_validate(a) for a in result.items]
+        # add consultation_id to each item for convenience
+        items = []
+        for a in result.items:
+            item = AppointmentListItem.model_validate(a)
+            item.consultation_id = a.consultation.id if a.consultation else None
+            items.append(item)
+
+        result.items = items
         return result
 
     async def get_appointment(
