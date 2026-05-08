@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Internal — repository
-from app.repositories.analytics_repository2 import AnalyticsRepository
+from app.repositories.analytics_repository import AnalyticsRepository
 
 # Internal — schemas
 from app.schemas.analytics import (
