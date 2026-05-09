@@ -2,8 +2,11 @@
 import logging
 
 # Third-party
-from fastapi import APIRouter, Cookie, Response
+from fastapi import APIRouter, Cookie, Request, Response
 from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from app.main import limiter
 
 # Internal — dependencies
 from app.constants.values import OTP_EXPIRE_MINUTES
@@ -138,8 +141,10 @@ async def me(current_user: AuthenticatedUser, db: DbSession) -> JSONResponse:
         "data": result.model_dump(mode="json"),
     })
 
+
 @router.post("/forgot-password", response_model=SuccessResponse[None])
-async def forgot_password(body: ForgotPasswordRequest, db: DbSession) -> JSONResponse:
+@limiter.limit("3/hour")  # 3 attempts per IP per hour
+async def forgot_password(request: Request, body: ForgotPasswordRequest, db: DbSession) -> JSONResponse:
     """
     Initiate password reset flow by sending an OTP to the user's email.
     Always returns success to prevent email enumeration.
