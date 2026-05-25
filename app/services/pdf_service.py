@@ -104,7 +104,7 @@ class PDFService:
             if clinic.phone:
                 story.append(Paragraph(f"Phone: {clinic.phone}", sub_style))
             story.append(Paragraph(
-                f"Reg. No: {clinic.dentist_reg_id}   |   Dr. {clinic.dentist_name}",
+                f"Reg. No: {clinic.dentist_reg_id}   |   {clinic.dentist_name}",
                 sub_style,
             ))
             story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#1a3a5c"), spaceAfter=8))
@@ -175,7 +175,7 @@ class PDFService:
             story.append(Spacer(1, 0.4 * cm))
             if consultation.fee_charged is not None:
                 story.append(Paragraph(
-                    f"<b>Consultation Fee:</b> ₹{consultation.fee_charged:.2f}", body_style
+                    f"<b>Consultation Fee:</b> Rs. {consultation.fee_charged:.2f}", body_style
                 ))
             if consultation.is_follow_up_required:
                 fu_text = f"Follow-up required"
