@@ -10,7 +10,10 @@ from app.models.clinic_member import ClinicMember
 from app.models.user_permission import UserPermission
 from app.models.patient import Patient
 from app.models.appointment import Appointment
-from app.models.consultation import Consultation
+from app.models.consultation_visit import ConsultationVisit
+from app.models.consultation_branch import ConsultationBranch
+from app.models.consultation_case import ConsultationCase
+from app.models.pending_treatment import PendingTreatment
 from app.models.medication import Medication
 from app.models.med_library import MedLibrary
 from app.models.follow_up import FollowUp
@@ -23,7 +26,10 @@ __all__ = [
     "UserPermission",
     "Patient",
     "Appointment",
-    "Consultation",
+    "ConsultationVisit",
+    "ConsultationBranch",
+    "ConsultationCase",
+    "PendingTreatment",
     "Medication",
     "MedLibrary",
     "FollowUp",

@@ -13,48 +13,34 @@ from app.database.base import Base
 
 class Medication(Base):
     """
-    Prescriptions within a consultation.
-    Multiple medications per consultation allowed.
-    Deleted with consultation (CASCADE).
+    Prescriptions within a consultation branch.
+    Deleted with branch (CASCADE).
     """
 
     __tablename__ = "medications"
 
-    id: Mapped[uuid.UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    branch_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-    )
-    consultation_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("consultations.id", ondelete="CASCADE"),
+        ForeignKey("consultation_branches.id", ondelete="CASCADE"),
         nullable=False,
     )
-    clinic_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("clinics.id", ondelete="RESTRICT"),
-        nullable=False,
-    )
-    # Optional link back to the master med it was created from.
-    # NULL = dentist typed a free-form med not in library.
-    # SET NULL on delete = if master med deleted, Rx record is preserved.
+    clinic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clinics.id", ondelete="RESTRICT"), nullable=False)
     med_library_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("med_library.id", ondelete="SET NULL"),
         nullable=True,
         default=None,
     )
-    # Prescription details — all free text (dentist enters what they prescribe)
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    dosage: Mapped[str | None] = mapped_column(String(100), nullable=True)    # e.g. "500mg"
-    frequency: Mapped[str | None] = mapped_column(String(100), nullable=True) # e.g. "3 times a day"
-    duration: Mapped[str | None] = mapped_column(String(100), nullable=True)  # e.g. "5 days"
-    instructions: Mapped[str | None] = mapped_column(Text, nullable=True)     # e.g. "After food"
 
-    # Controls display order on PDF prescription
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    dosage: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    frequency: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    duration: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
     sort_order: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
 
-    # Timestamp — created_at only (medications don't get updated, replaced instead)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -62,14 +48,14 @@ class Medication(Base):
     )
 
     # Relationship
-    consultation: Mapped["Consultation"] = relationship(
-        "Consultation",
+    branch: Mapped["ConsultationBranch"] = relationship(
+        "ConsultationBranch",
         back_populates="medications",
-        foreign_keys=[consultation_id],
+        foreign_keys=[branch_id],
     )
 
     __table_args__ = (
-        Index("idx_medications_consultation", "consultation_id"),
+        Index("idx_medications_branch", "branch_id"),
         Index("idx_medications_clinic", "clinic_id"),
     )
 

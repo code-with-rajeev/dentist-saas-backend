@@ -14,72 +14,48 @@ from app.database.mixins import TimestampMixin
 
 class FollowUp(Base, TimestampMixin):
     """
-    Follow-up tasks created from a consultation's follow-up flag.
+    Follow-up tasks created from a consultation_visit's follow-up flag.
+    Follow-up is visit-level — one per visit, covers all branches.
     In MVP: record only — status tracked manually.
     Post-MVP: triggers Celery task for WhatsApp reminder on follow_up_date.
     """
 
     __tablename__ = "follow_ups"
 
-    id: Mapped[uuid.UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    clinic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clinics.id", ondelete="RESTRICT"), nullable=False)
+    patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="RESTRICT"), nullable=False)
+
+    visit_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-    )
-    clinic_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("clinics.id", ondelete="RESTRICT"),
-        nullable=False,
-    )
-    patient_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("patients.id", ondelete="RESTRICT"),
-        nullable=False,
-    )
-    consultation_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("consultations.id", ondelete="RESTRICT"),
+        ForeignKey("consultation_visits.id", ondelete="RESTRICT"),
         nullable=False,
     )
 
-    # Linked follow-up appointment — created when patient books the follow-up
     follow_up_appointment_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("appointments.id", ondelete="SET NULL"),
         nullable=True,
     )
 
-    # Scheduling
     follow_up_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="scheduled", server_default="scheduled")
 
-    # Status — status=cancelled is the "delete"
-    status: Mapped[str] = mapped_column(
-        String(20),
-        nullable=False,
-        default="scheduled",
-        server_default="scheduled",
-    )
+    reminder_sent_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    celery_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    # POST-MVP — WhatsApp reminder tracking (columns exist now, unused in MVP)
-    reminder_sent_at: Mapped[DateTime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    celery_task_id: Mapped[str | None] = mapped_column(
-        String(255), nullable=True   # Celery task ID for cancellation
-    )
-
-    # Relationships
-    consultation: Mapped["Consultation"] = relationship(
-        "Consultation",
+    # Relationship
+    visit: Mapped["ConsultationVisit"] = relationship(
+        "ConsultationVisit",
         back_populates="follow_up",
-        foreign_keys=[consultation_id],
+        foreign_keys=[visit_id],
     )
 
     __table_args__ = (
         Index("idx_follow_ups_clinic", "clinic_id"),
         Index("idx_follow_ups_patient", "patient_id", "clinic_id"),
-        Index("idx_follow_ups_consultation", "consultation_id"),
+        Index("idx_follow_ups_visit", "visit_id"),
         Index("idx_follow_ups_date", "clinic_id", "follow_up_date"),
     )
 

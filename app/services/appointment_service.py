@@ -130,7 +130,7 @@ class AppointmentService:
         items = []
         for a in result.items:
             item = AppointmentListItem.model_validate(a)
-            item.consultation_id = a.consultation.id if a.consultation else None
+            item.consultation_id = a.visit.id if a.visit else None
             items.append(item)
 
         result.items = items
@@ -287,7 +287,7 @@ class AppointmentService:
         items = []
         for a in result.items:
             item = AppointmentListItem.model_validate(a)
-            item.consultation_id = a.consultation.id if a.consultation else None
+            item.consultation_id = a.visit.id if a.visit else None
             items.append(item)
 
         result.items = items
@@ -300,5 +300,5 @@ class AppointmentService:
 
 def _to_response(appt) -> AppointmentResponse:
     response = AppointmentResponse.model_validate(appt)
-    response.consultation_id = appt.consultation.id if appt.consultation else None
+    response.consultation_id = appt.visit.id if appt.visit else None
     return response

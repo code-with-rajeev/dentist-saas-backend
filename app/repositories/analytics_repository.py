@@ -10,7 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 # Internal — models
 from app.models.appointment import Appointment
-from app.models.consultation import Consultation
+from app.models.consultation_visit import ConsultationVisit
+from app.models.consultation_branch import ConsultationBranch
 from app.models.patient import Patient
 
 
@@ -145,13 +146,13 @@ class AnalyticsRepository:
         # ---- 2. Revenue + peak day (one query) -------------------------------
         # Joins only submitted consultations — average is over completed appts only.
         rev_q = select(
-            func.coalesce(func.sum(Consultation.fee_charged), 0).label("total_revenue"),
-            func.coalesce(func.avg(Consultation.fee_charged), 0).label("avg_fee"),
+            func.coalesce(func.sum(ConsultationVisit.total_paid), 0).label("total_revenue"),
+            func.coalesce(func.avg(ConsultationVisit.total_paid), 0).label("avg_fee"),
         ).join(
-            Appointment, Consultation.appointment_id == Appointment.id
+            Appointment, ConsultationVisit.appointment_id == Appointment.id
         ).where(
-            Consultation.clinic_id == clinic_id,
-            Consultation.is_submitted == True,  # noqa: E712
+            ConsultationVisit.clinic_id == clinic_id,
+            ConsultationVisit.is_finalized == True,  # noqa: E712
             Appointment.scheduled_date >= date_from,
             Appointment.scheduled_date <= date_to,
         )
@@ -160,18 +161,18 @@ class AnalyticsRepository:
         # Peak revenue day
         peak_q = select(
             Appointment.scheduled_date.label("day"),
-            func.sum(Consultation.fee_charged).label("day_rev"),
+            func.sum(ConsultationVisit.total_paid).label("day_rev"),
         ).join(
-            Appointment, Consultation.appointment_id == Appointment.id
+            Appointment, ConsultationVisit.appointment_id == Appointment.id
         ).where(
-            Consultation.clinic_id == clinic_id,
-            Consultation.is_submitted == True,  # noqa: E712
+            ConsultationVisit.clinic_id == clinic_id,
+            ConsultationVisit.is_finalized == True,  # noqa: E712
             Appointment.scheduled_date >= date_from,
             Appointment.scheduled_date <= date_to,
         ).group_by(
             Appointment.scheduled_date
         ).order_by(
-            func.sum(Consultation.fee_charged).desc()
+            func.sum(ConsultationVisit.total_paid).desc()
         ).limit(1)
         peak_row = (await self.db.execute(peak_q)).mappings().first()
 
@@ -328,26 +329,26 @@ class AnalyticsRepository:
         """
         # Total collected + average
         collected_q = select(
-            func.coalesce(func.sum(Consultation.fee_charged), 0).label("total_revenue"),
-            func.coalesce(func.avg(Consultation.fee_charged), 0).label("avg_fee"),
+            func.coalesce(func.sum(ConsultationVisit.total_paid), 0).label("total_revenue"),
+            func.coalesce(func.avg(ConsultationVisit.total_paid), 0).label("avg_fee"),
         ).join(
-            Appointment, Consultation.appointment_id == Appointment.id
+            Appointment, ConsultationVisit.appointment_id == Appointment.id
         ).where(
-            Consultation.clinic_id == clinic_id,
-            Consultation.is_submitted == True,  # noqa: E712
+            ConsultationVisit.clinic_id == clinic_id,
+            #ConsultationVisit.is_finalized == True,  # noqa: E712
             Appointment.scheduled_date >= date_from,
             Appointment.scheduled_date <= date_to,
         )
         collected = (await self.db.execute(collected_q)).mappings().one()
 
-        # Outstanding: consultations not yet submitted (billed but uncollected)
+        # Outstanding: consultation visits unpaid (billed but uncollected)
         outstanding_q = select(
-            func.coalesce(func.sum(Consultation.fee_charged), 0).label("outstanding"),
+            func.coalesce(func.sum(ConsultationVisit.total_billed), 0).label("outstanding"),
         ).join(
-            Appointment, Consultation.appointment_id == Appointment.id
+            Appointment, ConsultationVisit.appointment_id == Appointment.id
         ).where(
-            Consultation.clinic_id == clinic_id,
-            Consultation.is_submitted == False,  # noqa: E712
+            ConsultationVisit.clinic_id == clinic_id,
+            #ConsultationVisit.is_finalized == False,  # noqa: E712
             Appointment.scheduled_date >= date_from,
             Appointment.scheduled_date <= date_to,
         )
@@ -357,16 +358,16 @@ class AnalyticsRepository:
         outstanding   = _round2(outstanding_row["outstanding"])
         total_billed  = total_revenue + outstanding
 
-        # Fix: daily breakdown joins both counts and revenue in one query
+        # Fix: daily breakdown joins both counts and revenue in one query, only finalized visit
         daily_q = select(
             Appointment.scheduled_date.label("date"),
             func.count(Appointment.id.distinct()).label("appointment_count"),
-            func.coalesce(func.sum(Consultation.fee_charged), 0).label("revenue"),
+            func.coalesce(func.sum(ConsultationVisit.total_billed), 0).label("revenue"),
         ).join(
-            Appointment, Consultation.appointment_id == Appointment.id
+            Appointment, ConsultationVisit.appointment_id == Appointment.id
         ).where(
-            Consultation.clinic_id == clinic_id,
-            Consultation.is_submitted == True,  # noqa: E712
+            ConsultationVisit.clinic_id == clinic_id,
+            ConsultationVisit.is_finalized == True,  # noqa: E712
             Appointment.scheduled_date >= date_from,
             Appointment.scheduled_date <= date_to,
         ).group_by(
@@ -436,19 +437,20 @@ class AnalyticsRepository:
         returning = max(0, unique - new)
 
         # Top procedures by appointment count and revenue
+
         proc_q = select(
-            Consultation.diagnosis.label("procedure"),
+            ConsultationBranch.procedure_category.label("procedure"),
             func.count().label("count"),
-            func.coalesce(func.sum(Consultation.fee_charged), 0).label("revenue"),
+            func.coalesce(func.sum(ConsultationBranch.billing_amount), 0).label("revenue"),
         ).join(
-            Appointment, Consultation.appointment_id == Appointment.id
+            Appointment, ConsultationBranch.appointment_id == Appointment.id
         ).where(
-            Consultation.clinic_id == clinic_id,
-            Consultation.is_submitted == True,  # noqa: E712
+            ConsultationBranch.clinic_id == clinic_id,
+            ConsultationBranch.branch_status == "done",  # noqa: E712
             Appointment.scheduled_date >= date_from,
             Appointment.scheduled_date <= date_to,
         ).group_by(
-            Consultation.diagnosis
+            ConsultationBranch.procedure_category
         ).order_by(
             func.count().desc()
         ).limit(5)

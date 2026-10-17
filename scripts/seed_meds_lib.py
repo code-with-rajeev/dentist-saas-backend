@@ -3,7 +3,7 @@ Seed script — System Medication Library
 Populates med_library table with 141 preloaded Indian dental formulary entries.
 
 Usage:
-    python seed_med_library.py
+    python seed_meds_lib.py
 
 Run ONCE after alembic upgrade head.
 Safe to re-run — skips existing entries (upsert on name + dosage + dentist_id).

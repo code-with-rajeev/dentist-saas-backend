@@ -113,8 +113,8 @@ class Appointment(Base, TimestampMixin):
         back_populates="appointments",
         lazy="selectin",    # ← add this
     )
-    consultation: Mapped["Consultation | None"] = relationship(
-        "Consultation",
+    visit: Mapped["ConsultationVisit| None"] = relationship(
+        "ConsultationVisit",
         back_populates="appointment",
         uselist=False,
         lazy="selectin",
